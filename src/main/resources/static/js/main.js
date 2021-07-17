@@ -17,6 +17,7 @@ var colors = [
 ];
 
 function connect(event) {
+    console.log("Iniciando conexão ws")
     username = document.querySelector('#name').value.trim();
 
     if(username) {
@@ -29,20 +30,29 @@ function connect(event) {
         stompClient.connect({}, onConnected, onError);
     }
     event.preventDefault();
+    console.log("WS conectado")
 }
 
 
 function onConnected() {
+    console.log("Enviando requisição de addUser")
+    const room = document.querySelector("#room").value
+
     // Subscribe to the Public Topic
-    stompClient.subscribe('/topic/public', onMessageReceived);
+    stompClient.subscribe('/topic/public/' + room, onMessageReceived);
+    stompClient.subscribe('/topic/public/' + room + "/" + username, onMessageReceived2);
 
     // Tell your username to the server
-    stompClient.send("/app/chat.addUser",
+    stompClient.send("/app/chat.addUser/" + room,
         {},
-        JSON.stringify({sender: username, type: 'JOIN'})
+        JSON.stringify({sender: username, type: 'JOIN', room: room})
     )
 
     connectingElement.classList.add('hidden');
+    console.log("User adicionado com sucesso")
+
+    const userData = document.getElementById("user-data")
+    userData.innerText = "username: " + username + " | room: " + room
 }
 
 
@@ -53,19 +63,24 @@ function onError(error) {
 
 
 function sendMessage(event) {
+    const room = document.querySelector("#room").value
     var messageContent = messageInput.value.trim();
     if(messageContent && stompClient) {
         var chatMessage = {
             sender: username,
             content: messageInput.value,
-            type: 'CHAT'
+            type: 'CHAT',
+            room: room
         };
-        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        stompClient.send("/app/chat.sendMessage/" + room, {}, JSON.stringify(chatMessage));
         messageInput.value = '';
     }
     event.preventDefault();
 }
 
+function onMessageReceived2(payload) {
+    onMessageReceived(payload);
+}
 
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);

@@ -23,7 +23,7 @@ public class WebSocketEventListener {
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
-        log.info("Receveid a new web socket connection");
+        log.info("Receveid a new web socket connection {}", event.getSource());
     }
 
     @EventListener
@@ -31,6 +31,7 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
         String username = (String) headerAccessor.getSessionAttributes().get("username");
+        String room = (String) headerAccessor.getSessionAttributes().get("room");
 
         if(!isNull(username)) {
             log.info(String.format("User disconnected: %s", username));
@@ -40,7 +41,7 @@ public class WebSocketEventListener {
                     .sender(username)
                     .build();
 
-            messagingTemplate.convertAndSend("/topic/public", chatMessage);
+            messagingTemplate.convertAndSend("/topic/public/" + room, chatMessage);
         }
     }
 }
